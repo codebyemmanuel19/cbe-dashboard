@@ -1,25 +1,27 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useState } from "react";
+import Login from "./components/Login";
+import ClientDashboard from "./components/ClientDashboard";
+import AdminDashboard from "./components/AdminDashboard";
+import "./App.css";
+
+const ADMIN_EMAIL = "admin@cbequicksite.com"; // your own login email
 
 function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+  const [user, setUser] = useState(null);
+
+  const handleLoginSuccess = (userData) => {
+    setUser(userData);
+  };
+
+  if (!user) {
+    return <Login onLoginSuccess={handleLoginSuccess} />;
+  }
+
+  if (user.email === ADMIN_EMAIL) {
+    return <AdminDashboard />;
+  }
+
+  return <ClientDashboard user={user} />;
 }
 
 export default App;

@@ -1,0 +1,102 @@
+.admin-dashboard {
+  min-height: 100vh;
+  background-color: #FAFAFA;
+  padding: 40px 24px;
+}
+
+.admin-header {
+  max-width: 700px;
+  margin: 0 auto 32px auto;
+}
+
+.admin-header h1 {
+  font-size: 1.5rem;
+  color: #1A1A1A;
+  margin-bottom: 4px;
+}
+
+.admin-header p {
+  color: #777777;
+  font-size: 0.9rem;
+}
+
+.admin-create {
+  max-width: 700px;
+  margin: 0 auto 40px auto;
+  background-color: #FFFFFF;
+  padding: 24px;
+  border-radius: 10px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
+}
+
+.admin-create h2 {
+  font-size: 1.1rem;
+  margin-bottom: 8px;
+  color: #1A1A1A;
+}
+
+.admin-create label {
+  display: block;
+  font-size: 0.85rem;
+  color: #333333;
+  margin-top: 14px;
+  margin-bottom: 6px;
+}
+
+.admin-create input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #DDDDDD;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.admin-create button {
+  margin-top: 20px;
+  padding: 12px 24px;
+  background-color: #2563EB;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 6px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.create-success {
+  color: #16A34A;
+  margin-top: 12px;
+  font-size: 0.9rem;
+}
+
+.admin-list {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.admin-list h2 {
+  font-size: 1.2rem;
+  margin-bottom: 12px;
+  color: #1A1A1A;
+}
+
+.admin-list table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #FFFFFF;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
+}
+
+.admin-list th,
+.admin-list td {
+  text-align: left;
+  padding: 12px 16px;
+  border-bottom: 1px solid #EEEEEE;
+  font-size: 0.9rem;
+}
+
+.admin-list th {
+  background-color: #F5F5F5;
+  color: #555555;
+}
