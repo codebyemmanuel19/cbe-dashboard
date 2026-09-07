@@ -125,7 +125,8 @@
   padding: 12px;
   display: flex;
   gap: 12px;
-  align-items: center;
+  align-items: flex-start;
+  overflow: hidden;
 }
 
 .listing-thumbnail {
@@ -138,17 +139,21 @@
 
 .listing-info {
   flex: 1;
+  min-width: 0;
 }
 
 .listing-info strong {
   color: #1A1A1A;
   font-size: 0.95rem;
+  display: block;
+  overflow-wrap: break-word;
 }
 
 .listing-description {
   margin: 4px 0;
   font-size: 0.85rem;
   color: #555555;
+  overflow-wrap: break-word;
 }
 
 .listing-price {
@@ -159,6 +164,7 @@
 
 .listing-actions {
   display: flex;
+  flex-direction: column;
   gap: 8px;
   flex-shrink: 0;
 }
