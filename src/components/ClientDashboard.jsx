@@ -3,6 +3,7 @@ import { uploadImage } from "../utils/uploadImage";
 import "./ClientDashboard.css";
 
 const API_BASE_URL = "https://cbe-quicksite-backend.onrender.com";
+const DESCRIPTION_MAX_LENGTH = 40;
 
 function ClientDashboard({ user }) {
   const [businessName, setBusinessName] = useState(user.business_name || "");
@@ -388,12 +389,13 @@ function ClientDashboard({ user }) {
             placeholder="e.g. Luxury Gel Manicure"
           />
 
-          <label>Description</label>
+          <label>Description ({listingDescription.length}/{DESCRIPTION_MAX_LENGTH})</label>
           <textarea
             rows="3"
+            maxLength={DESCRIPTION_MAX_LENGTH}
             value={listingDescription}
             onChange={(e) => setListingDescription(e.target.value)}
-            placeholder="Describe this product or service..."
+            placeholder="Short description (max 40 characters)..."
           />
 
           <label>Price</label>
