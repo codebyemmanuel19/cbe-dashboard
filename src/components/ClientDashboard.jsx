@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { uploadImage } from "../utils/uploadImage";
 import "./ClientDashboard.css";
 
-
 const API_BASE_URL = "https://cbe-quicksite-backend.onrender.com";
 const DESCRIPTION_MAX_LENGTH = 160;
 const MAX_LISTING_IMAGES = 4;
