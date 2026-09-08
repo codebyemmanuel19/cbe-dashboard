@@ -464,12 +464,12 @@ function ClientDashboard({ user }) {
             <div className="listing-image-grid">
               {listingImages.map((url, index) => (
                 <div className="listing-image-item" key={url + index}>
-                  <img src={url} alt={`Photo ${index + 1}`} />
+                  <img src={url} alt={`Product view ${index + 1}`} />
                   <button
                     type="button"
                     className="listing-image-remove"
                     onClick={() => removeListingImage(index)}
-                    aria-label={`Remove photo ${index + 1}`}
+                    aria-label={`Remove view ${index + 1}`}
                   >
                     ✕
                   </button>
