@@ -3,7 +3,8 @@ import { uploadImage } from "../utils/uploadImage";
 import "./ClientDashboard.css";
 
 const API_BASE_URL = "https://cbe-quicksite-backend.onrender.com";
-const DESCRIPTION_MAX_LENGTH = 40;
+const DESCRIPTION_MAX_LENGTH = 160;
+const MAX_LISTING_IMAGES = 4;
 
 function ClientDashboard({ user }) {
   const [businessName, setBusinessName] = useState(user.business_name || "");
@@ -33,7 +34,8 @@ function ClientDashboard({ user }) {
   const [listingTitle, setListingTitle] = useState("");
   const [listingDescription, setListingDescription] = useState("");
   const [listingPrice, setListingPrice] = useState("");
-  const [listingImageUrl, setListingImageUrl] = useState("");
+  const [listingStock, setListingStock] = useState("");
+  const [listingImages, setListingImages] = useState([]); // up to 4 photos
   const [uploadingListingImage, setUploadingListingImage] = useState(false);
   const [savingListing, setSavingListing] = useState(false);
   const [listingError, setListingError] = useState("");
@@ -138,24 +140,46 @@ function ClientDashboard({ user }) {
     setListingTitle("");
     setListingDescription("");
     setListingPrice("");
-    setListingImageUrl("");
+    setListingStock("");
+    setListingImages([]);
     setListingError("");
   };
 
+  // Accepts several files at once, stops at 4 photos total
   const handleListingImageChange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const room = MAX_LISTING_IMAGES - listingImages.length;
+    if (room <= 0) {
+      setListingError(`You can only add ${MAX_LISTING_IMAGES} photos per product.`);
+      return;
+    }
+
+    const toUpload = files.slice(0, room);
+    if (files.length > room) {
+      setListingError(`Only ${room} more photo(s) could be added.`);
+    }
 
     setUploadingListingImage(true);
     try {
-      const url = await uploadImage(file);
-      setListingImageUrl(url);
+      const urls = [];
+      for (const file of toUpload) {
+        const url = await uploadImage(file);
+        urls.push(url);
+      }
+      setListingImages((current) => [...current, ...urls]);
     } catch (err) {
       console.error("Listing image upload failed:", err);
       setListingError("Image upload failed. Please try again.");
     } finally {
       setUploadingListingImage(false);
+      e.target.value = ""; // lets the same file be picked again
     }
+  };
+
+  const removeListingImage = (index) => {
+    setListingImages((current) => current.filter((_, i) => i !== index));
   };
 
   const handleEditClick = (listing) => {
@@ -163,10 +187,12 @@ function ClientDashboard({ user }) {
     setListingTitle(listing.title || "");
     setListingDescription(listing.description || "");
     setListingPrice(listing.price || "");
-    setListingImageUrl(
-      listing.media_urls && listing.media_urls.length > 0 ? listing.media_urls[0] : ""
+    setListingStock(
+      listing.stock === null || listing.stock === undefined ? "" : listing.stock
     );
+    setListingImages(listing.media_urls ? listing.media_urls.slice(0, MAX_LISTING_IMAGES) : []);
     setListingError("");
+    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
   };
 
   const handleDeleteListing = async (id) => {
@@ -213,7 +239,8 @@ function ClientDashboard({ user }) {
         title: listingTitle,
         description: listingDescription,
         price: listingPrice,
-        media_urls: listingImageUrl ? [listingImageUrl] : [],
+        stock: listingStock === "" ? null : Number(listingStock),
+        media_urls: listingImages,
       };
 
       if (!isEditing) {
@@ -325,12 +352,12 @@ function ClientDashboard({ user }) {
           placeholder="https://tiktok.com/@yourbusiness"
         />
 
-        <label>WhatsApp Number</label>
+        <label>WhatsApp Number (with country code)</label>
         <input
           type="text"
           value={whatsapp}
           onChange={(e) => setWhatsapp(e.target.value)}
-          placeholder="08012345678"
+          placeholder="2348012345678"
         />
 
         <label>Logo</label>
@@ -367,6 +394,12 @@ function ClientDashboard({ user }) {
                   <strong>{item.title}</strong>
                   <p className="listing-description">{item.description}</p>
                   {item.price && <p className="listing-price">₦{Number(item.price).toLocaleString()}</p>}
+                  <p className="listing-meta">
+                    {item.media_urls ? item.media_urls.length : 0} photo(s)
+                    {item.stock !== null && item.stock !== undefined
+                      ? ` · ${item.stock} in stock`
+                      : ""}
+                  </p>
                 </div>
                 <div className="listing-actions">
                   <button type="button" onClick={() => handleEditClick(item)}>Edit</button>
@@ -395,7 +428,7 @@ function ClientDashboard({ user }) {
             maxLength={DESCRIPTION_MAX_LENGTH}
             value={listingDescription}
             onChange={(e) => setListingDescription(e.target.value)}
-            placeholder="Short description (max 40 characters)..."
+            placeholder="What it is, size, colour, material..."
           />
 
           <label>Price</label>
@@ -406,11 +439,44 @@ function ClientDashboard({ user }) {
             placeholder="12000"
           />
 
-          <label>Image</label>
-          <input type="file" accept="image/*" onChange={handleListingImageChange} />
-          {uploadingListingImage && <p>Uploading image...</p>}
-          {listingImageUrl && (
-            <img src={listingImageUrl} alt="Listing preview" className="preview-image preview-listing" />
+          <label>Stock (leave empty if you always have it)</label>
+          <input
+            type="number"
+            min="0"
+            value={listingStock}
+            onChange={(e) => setListingStock(e.target.value)}
+            placeholder="e.g. 5"
+          />
+
+          <label>
+            Photos ({listingImages.length}/{MAX_LISTING_IMAGES}) — first one shows on the card
+          </label>
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handleListingImageChange}
+            disabled={listingImages.length >= MAX_LISTING_IMAGES || uploadingListingImage}
+          />
+          {uploadingListingImage && <p>Uploading photos...</p>}
+
+          {listingImages.length > 0 && (
+            <div className="listing-image-grid">
+              {listingImages.map((url, index) => (
+                <div className="listing-image-item" key={url + index}>
+                  <img src={url} alt={`Photo ${index + 1}`} />
+                  <button
+                    type="button"
+                    className="listing-image-remove"
+                    onClick={() => removeListingImage(index)}
+                    aria-label={`Remove photo ${index + 1}`}
+                  >
+                    ✕
+                  </button>
+                  {index === 0 && <span className="listing-image-main">Main</span>}
+                </div>
+              ))}
+            </div>
           )}
 
           <div className="listing-form-actions">
