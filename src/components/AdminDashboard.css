@@ -43,12 +43,28 @@
   margin-bottom: 6px;
 }
 
-.admin-create input {
+.admin-create input,
+.admin-create select {
   width: 100%;
   padding: 12px;
   border: 1px solid #DDDDDD;
   border-radius: 6px;
   font-size: 1rem;
+  font-family: inherit;
+  background-color: #FFFFFF;
+  box-sizing: border-box;
+}
+
+.admin-create select {
+  cursor: pointer;
+}
+
+/* shows the real subdomain before you hit create */
+.slug-preview {
+  margin: 6px 0 0;
+  font-size: 0.8rem;
+  color: #16A34A;
+  font-weight: 600;
 }
 
 .admin-create button {
@@ -64,6 +80,12 @@
 
 .create-success {
   color: #16A34A;
+  margin-top: 12px;
+  font-size: 0.9rem;
+}
+
+.create-error {
+  color: #DC2626;
   margin-top: 12px;
   font-size: 0.9rem;
 }
@@ -99,4 +121,20 @@
 .admin-list th {
   background-color: #F5F5F5;
   color: #555555;
+}
+
+/* per-client template switcher in the table */
+.template-select {
+  padding: 6px 8px;
+  border: 1px solid #DDDDDD;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-family: inherit;
+  background-color: #FFFFFF;
+  cursor: pointer;
+}
+
+.template-select:disabled {
+  opacity: 0.5;
+  cursor: wait;
 }

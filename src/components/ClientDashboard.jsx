@@ -6,7 +6,23 @@ const API_BASE_URL = "https://cbe-quicksite-backend.onrender.com";
 const DESCRIPTION_MAX_LENGTH = 160;
 const MAX_LISTING_IMAGES = 4;
 
+const EMPTY_PROPERTY = {
+  listing_type: "sale",
+  period: "year",
+  location: "",
+  property_type: "",
+  bedrooms: "",
+  bathrooms: "",
+  size: "",
+  furnishing: "",
+  status: "",
+};
+
 function ClientDashboard({ user }) {
+  // Property clients get different listing fields and different wording
+  const isRealEstate = user.template_type === "realestate";
+  const itemWord = isRealEstate ? "Property" : "Listing";
+
   const [businessName, setBusinessName] = useState(user.business_name || "");
   const [homeText, setHomeText] = useState(user.home_text || "");
   const [aboutText, setAboutText] = useState(user.about_text || "");
@@ -36,9 +52,13 @@ function ClientDashboard({ user }) {
   const [listingPrice, setListingPrice] = useState("");
   const [listingStock, setListingStock] = useState("");
   const [listingImages, setListingImages] = useState([]); // up to 4 photos
+  const [property, setProperty] = useState(EMPTY_PROPERTY);
   const [uploadingListingImage, setUploadingListingImage] = useState(false);
   const [savingListing, setSavingListing] = useState(false);
   const [listingError, setListingError] = useState("");
+
+  const setPropertyField = (field) => (e) =>
+    setProperty((current) => ({ ...current, [field]: e.target.value }));
 
   const handleLogoChange = async (e) => {
     const file = e.target.files[0];
@@ -142,6 +162,7 @@ function ClientDashboard({ user }) {
     setListingPrice("");
     setListingStock("");
     setListingImages([]);
+    setProperty(EMPTY_PROPERTY);
     setListingError("");
   };
 
@@ -152,7 +173,7 @@ function ClientDashboard({ user }) {
 
     const room = MAX_LISTING_IMAGES - listingImages.length;
     if (room <= 0) {
-      setListingError(`You can only add ${MAX_LISTING_IMAGES} photos per product.`);
+      setListingError(`You can only add ${MAX_LISTING_IMAGES} photos per item.`);
       return;
     }
 
@@ -191,12 +212,13 @@ function ClientDashboard({ user }) {
       listing.stock === null || listing.stock === undefined ? "" : listing.stock
     );
     setListingImages(listing.media_urls ? listing.media_urls.slice(0, MAX_LISTING_IMAGES) : []);
+    setProperty({ ...EMPTY_PROPERTY, ...(listing.details || {}) });
     setListingError("");
     window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
   };
 
   const handleDeleteListing = async (id) => {
-    if (!window.confirm("Delete this listing? This cannot be undone.")) return;
+    if (!window.confirm(`Delete this ${itemWord.toLowerCase()}? This cannot be undone.`)) return;
 
     try {
       const res = await fetch(`${API_BASE_URL}/listings/${id}`, {
@@ -205,7 +227,7 @@ function ClientDashboard({ user }) {
       const data = await res.json();
 
       if (!data.success) {
-        alert(data.error || "Failed to delete listing.");
+        alert(data.error || "Failed to delete.");
         return;
       }
 
@@ -213,7 +235,7 @@ function ClientDashboard({ user }) {
       if (editingId === id) resetListingForm();
     } catch (err) {
       console.error("Delete error:", err);
-      alert("Something went wrong deleting this listing.");
+      alert("Something went wrong deleting this item.");
     }
   };
 
@@ -239,8 +261,9 @@ function ClientDashboard({ user }) {
         title: listingTitle,
         description: listingDescription,
         price: listingPrice,
-        stock: listingStock === "" ? null : Number(listingStock),
+        stock: isRealEstate || listingStock === "" ? null : Number(listingStock),
         media_urls: listingImages,
+        details: isRealEstate ? property : null,
       };
 
       if (!isEditing) {
@@ -256,7 +279,7 @@ function ClientDashboard({ user }) {
       const data = await res.json();
 
       if (!data.success) {
-        setListingError(data.error || "Failed to save listing.");
+        setListingError(data.error || "Failed to save.");
         setSavingListing(false);
         return;
       }
@@ -293,7 +316,11 @@ function ClientDashboard({ user }) {
           rows="2"
           value={homeText}
           onChange={(e) => setHomeText(e.target.value)}
-          placeholder="A short, punchy line for your homepage banner..."
+          placeholder={
+            isRealEstate
+              ? "e.g. Homes and land for sale across Lagos."
+              : "A short, punchy line for your homepage banner..."
+          }
         />
 
         <label>About Text</label>
@@ -377,40 +404,54 @@ function ClientDashboard({ user }) {
       </form>
 
       <section className="dashboard-listings">
-        <h2>My Products/Services</h2>
+        <h2>{isRealEstate ? "My Properties" : "My Products/Services"}</h2>
 
         {loadingListings ? (
-          <p>Loading listings...</p>
+          <p>Loading...</p>
         ) : listings.length === 0 ? (
-          <p className="listings-empty">No listings yet. Add your first one below.</p>
+          <p className="listings-empty">Nothing added yet. Add your first one below.</p>
         ) : (
           <div className="listings-list">
-            {listings.map((item) => (
-              <div key={item.id} className="listing-card">
-                {item.media_urls && item.media_urls[0] && (
-                  <img src={item.media_urls[0]} alt={item.title} className="listing-thumbnail" />
-                )}
-                <div className="listing-info">
-                  <strong>{item.title}</strong>
-                  <p className="listing-description">{item.description}</p>
-                  {item.price && <p className="listing-price">₦{Number(item.price).toLocaleString()}</p>}
-                  <p className="listing-meta">
-                    {item.media_urls ? item.media_urls.length : 0} photo(s)
-                    {item.stock !== null && item.stock !== undefined
-                      ? ` · ${item.stock} in stock`
-                      : ""}
-                  </p>
+            {listings.map((item) => {
+              const details = item.details || {};
+              return (
+                <div key={item.id} className="listing-card">
+                  {item.media_urls && item.media_urls[0] && (
+                    <img src={item.media_urls[0]} alt={item.title} className="listing-thumbnail" />
+                  )}
+                  <div className="listing-info">
+                    <strong>{item.title}</strong>
+                    <p className="listing-description">{item.description}</p>
+                    {item.price && (
+                      <p className="listing-price">
+                        ₦{Number(item.price).toLocaleString()}
+                        {isRealEstate && details.listing_type === "rent"
+                          ? `/${details.period === "month" ? "month" : "year"}`
+                          : ""}
+                      </p>
+                    )}
+                    <p className="listing-meta">
+                      {item.media_urls ? item.media_urls.length : 0} photo(s)
+                      {isRealEstate
+                        ? `${details.location ? ` · ${details.location}` : ""}${
+                            details.bedrooms ? ` · ${details.bedrooms} bed` : ""
+                          }`
+                        : item.stock !== null && item.stock !== undefined
+                        ? ` · ${item.stock} in stock`
+                        : ""}
+                    </p>
+                  </div>
+                  <div className="listing-actions">
+                    <button type="button" onClick={() => handleEditClick(item)}>Edit</button>
+                    <button type="button" onClick={() => handleDeleteListing(item.id)}>Delete</button>
+                  </div>
                 </div>
-                <div className="listing-actions">
-                  <button type="button" onClick={() => handleEditClick(item)}>Edit</button>
-                  <button type="button" onClick={() => handleDeleteListing(item.id)}>Delete</button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
-        <h3>{editingId ? "Edit Listing" : "Add New Listing"}</h3>
+        <h3>{editingId ? `Edit ${itemWord}` : `Add New ${itemWord}`}</h3>
         <form onSubmit={handleListingSubmit} className="listing-form">
           {listingError && <p className="save-error">{listingError}</p>}
 
@@ -419,7 +460,11 @@ function ClientDashboard({ user }) {
             type="text"
             value={listingTitle}
             onChange={(e) => setListingTitle(e.target.value)}
-            placeholder="e.g. Luxury Gel Manicure"
+            placeholder={
+              isRealEstate
+                ? "e.g. 3 Bedroom Flat in Lekki Phase 1"
+                : "e.g. Luxury Gel Manicure"
+            }
           />
 
           <label>Description ({listingDescription.length}/{DESCRIPTION_MAX_LENGTH})</label>
@@ -428,7 +473,11 @@ function ClientDashboard({ user }) {
             maxLength={DESCRIPTION_MAX_LENGTH}
             value={listingDescription}
             onChange={(e) => setListingDescription(e.target.value)}
-            placeholder="What it is, size, colour, material..."
+            placeholder={
+              isRealEstate
+                ? "Condition, what's nearby, service charge..."
+                : "What it is, size, colour, material..."
+            }
           />
 
           <label>Price</label>
@@ -436,17 +485,98 @@ function ClientDashboard({ user }) {
             type="number"
             value={listingPrice}
             onChange={(e) => setListingPrice(e.target.value)}
-            placeholder="12000"
+            placeholder={isRealEstate ? "2500000" : "12000"}
           />
 
-          <label>Stock (leave empty if you always have it)</label>
-          <input
-            type="number"
-            min="0"
-            value={listingStock}
-            onChange={(e) => setListingStock(e.target.value)}
-            placeholder="e.g. 5"
-          />
+          {/* ---------- property fields ---------- */}
+          {isRealEstate ? (
+            <>
+              <label>For sale or rent</label>
+              <select value={property.listing_type} onChange={setPropertyField("listing_type")}>
+                <option value="sale">For sale</option>
+                <option value="rent">For rent</option>
+              </select>
+
+              {property.listing_type === "rent" && (
+                <>
+                  <label>Rent period</label>
+                  <select value={property.period} onChange={setPropertyField("period")}>
+                    <option value="year">Per year</option>
+                    <option value="month">Per month</option>
+                  </select>
+                </>
+              )}
+
+              <label>Location (customers filter by this)</label>
+              <input
+                type="text"
+                value={property.location}
+                onChange={setPropertyField("location")}
+                placeholder="e.g. Lekki Phase 1, Lagos"
+              />
+
+              <label>Property type</label>
+              <input
+                type="text"
+                value={property.property_type}
+                onChange={setPropertyField("property_type")}
+                placeholder="e.g. Flat, Duplex, Bungalow, Land"
+              />
+
+              <label>Bedrooms</label>
+              <input
+                type="number"
+                min="0"
+                value={property.bedrooms}
+                onChange={setPropertyField("bedrooms")}
+                placeholder="3"
+              />
+
+              <label>Bathrooms</label>
+              <input
+                type="number"
+                min="0"
+                value={property.bathrooms}
+                onChange={setPropertyField("bathrooms")}
+                placeholder="2"
+              />
+
+              <label>Size</label>
+              <input
+                type="text"
+                value={property.size}
+                onChange={setPropertyField("size")}
+                placeholder="e.g. 450 sqm"
+              />
+
+              <label>Furnishing</label>
+              <input
+                type="text"
+                value={property.furnishing}
+                onChange={setPropertyField("furnishing")}
+                placeholder="e.g. Furnished, Unfurnished"
+              />
+
+              <label>Status</label>
+              <input
+                type="text"
+                value={property.status}
+                onChange={setPropertyField("status")}
+                placeholder="e.g. Available, Under offer"
+              />
+            </>
+          ) : (
+            <>
+              <label>Stock (leave empty if you always have it)</label>
+              <input
+                type="number"
+                min="0"
+                value={listingStock}
+                onChange={(e) => setListingStock(e.target.value)}
+                placeholder="e.g. 5"
+              />
+            </>
+          )}
 
           <label>
             Photos ({listingImages.length}/{MAX_LISTING_IMAGES}) — first one shows on the card
@@ -481,7 +611,7 @@ function ClientDashboard({ user }) {
 
           <div className="listing-form-actions">
             <button type="submit" disabled={savingListing || uploadingListingImage}>
-              {savingListing ? "Saving..." : editingId ? "Update Listing" : "Add Listing"}
+              {savingListing ? "Saving..." : editingId ? `Update ${itemWord}` : `Add ${itemWord}`}
             </button>
             {editingId && (
               <button type="button" onClick={resetListingForm}>

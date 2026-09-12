@@ -3,17 +3,34 @@ import "./AdminDashboard.css";
 
 const API_BASE_URL = "https://cbe-quicksite-backend.onrender.com";
 
+const TEMPLATES = [
+  { value: "shop", label: "Shop — products, cart, order on WhatsApp" },
+  { value: "realestate", label: "Real Estate — properties, specs, enquire" },
+];
+
+// Same cleaning the backend does, so the admin sees the real slug before saving
+function cleanSlug(input) {
+  return String(input || "")
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, "")
+    .replace(/\.cbequicksite\.com$/, "")
+    .replace(/[^a-z0-9-]/g, "");
+}
+
 function AdminDashboard() {
   const [businessName, setBusinessName] = useState("");
   const [slug, setSlug] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [templateType, setTemplateType] = useState("shop");
   const [created, setCreated] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const [clients, setClients] = useState([]);
   const [loadingClients, setLoadingClients] = useState(true);
+  const [switchingId, setSwitchingId] = useState(null);
 
   const fetchClients = async () => {
     setLoadingClients(true);
@@ -38,7 +55,9 @@ function AdminDashboard() {
     e.preventDefault();
     setError("");
 
-    if (!businessName || !slug || !email || !password) {
+    const finalSlug = cleanSlug(slug);
+
+    if (!businessName || !finalSlug || !email || !password) {
       setError("Please fill in all fields.");
       return;
     }
@@ -51,9 +70,10 @@ function AdminDashboard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           business_name: businessName,
-          slug,
+          slug: finalSlug,
           email,
           password,
+          template_type: templateType,
         }),
       });
 
@@ -71,6 +91,7 @@ function AdminDashboard() {
       setSlug("");
       setEmail("");
       setPassword("");
+      setTemplateType("shop");
 
       fetchClients();
     } catch (err) {
@@ -80,6 +101,34 @@ function AdminDashboard() {
       setLoading(false);
     }
   };
+
+  // Switch an existing client between templates
+  const handleTemplateChange = async (id, value) => {
+    setSwitchingId(id);
+    try {
+      const res = await fetch(`${API_BASE_URL}/clients/${id}/template`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ template_type: value }),
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        alert(data.error || "Failed to change template.");
+        return;
+      }
+
+      fetchClients();
+    } catch (err) {
+      console.error("Error changing template:", err);
+      alert("Something went wrong changing the template.");
+    } finally {
+      setSwitchingId(null);
+    }
+  };
+
+  const previewSlug = cleanSlug(slug);
 
   return (
     <div className="admin-dashboard">
@@ -108,6 +157,21 @@ function AdminDashboard() {
             onChange={(e) => setSlug(e.target.value)}
             placeholder="joesbarber"
           />
+          {previewSlug && (
+            <p className="slug-preview">{previewSlug}.cbequicksite.com</p>
+          )}
+
+          <label>Website Type</label>
+          <select
+            value={templateType}
+            onChange={(e) => setTemplateType(e.target.value)}
+          >
+            {TEMPLATES.map((t) => (
+              <option key={t.value} value={t.value}>
+                {t.label}
+              </option>
+            ))}
+          </select>
 
           <label>Email</label>
           <input
@@ -143,6 +207,7 @@ function AdminDashboard() {
                 <th>Business</th>
                 <th>Slug</th>
                 <th>Email</th>
+                <th>Type</th>
               </tr>
             </thead>
             <tbody>
@@ -151,6 +216,17 @@ function AdminDashboard() {
                   <td>{c.business_name}</td>
                   <td>{c.slug}</td>
                   <td>{c.email}</td>
+                  <td>
+                    <select
+                      className="template-select"
+                      value={c.template_type || "shop"}
+                      disabled={switchingId === c.id}
+                      onChange={(e) => handleTemplateChange(c.id, e.target.value)}
+                    >
+                      <option value="shop">Shop</option>
+                      <option value="realestate">Real Estate</option>
+                    </select>
+                  </td>
                 </tr>
               ))}
             </tbody>

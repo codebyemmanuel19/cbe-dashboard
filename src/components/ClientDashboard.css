@@ -38,7 +38,8 @@
 }
 
 .dashboard-form input,
-.dashboard-form textarea {
+.dashboard-form textarea,
+.dashboard-form select {
   width: 100%;
   padding: 12px;
   border: 1px solid #DDDDDD;
@@ -46,6 +47,7 @@
   font-size: 1rem;
   font-family: inherit;
   box-sizing: border-box;
+  background-color: #FFFFFF;
 }
 
 .dashboard-form button {
@@ -163,7 +165,7 @@
   color: #1A1A1A;
 }
 
-/* photo count + stock line under each listing */
+/* photo count, stock or property info under each listing */
 .listing-meta {
   font-size: 0.8rem;
   color: #8A8F98;
@@ -211,7 +213,8 @@
 }
 
 .listing-form input,
-.listing-form textarea {
+.listing-form textarea,
+.listing-form select {
   width: 100%;
   padding: 10px;
   border: 1px solid #DDDDDD;
@@ -219,6 +222,11 @@
   font-size: 1rem;
   font-family: inherit;
   box-sizing: border-box;
+  background-color: #FFFFFF;
+}
+
+.listing-form select {
+  cursor: pointer;
 }
 
 .listing-form input[type="file"]:disabled {
