@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { apiFetch } from "../utils/api";
 import "./AdminDashboard.css";
-
-const API_BASE_URL = "https://cbe-quicksite-backend.onrender.com";
 
 const TEMPLATES = [
   { value: "shop", label: "Shop — products, cart, order on WhatsApp" },
@@ -18,7 +17,7 @@ function cleanSlug(input) {
     .replace(/[^a-z0-9-]/g, "");
 }
 
-function AdminDashboard() {
+function AdminDashboard({ onLogout }) {
   const [businessName, setBusinessName] = useState("");
   const [slug, setSlug] = useState("");
   const [email, setEmail] = useState("");
@@ -35,8 +34,8 @@ function AdminDashboard() {
   const fetchClients = async () => {
     setLoadingClients(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/clients`);
-      const data = await res.json();
+      // Admin-only route — the token proves who's asking
+      const data = await apiFetch("/clients");
       if (data.success) {
         setClients(data.clients || []);
       }
@@ -65,9 +64,8 @@ function AdminDashboard() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/clients`, {
+      const data = await apiFetch("/clients", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           business_name: businessName,
           slug: finalSlug,
@@ -76,8 +74,6 @@ function AdminDashboard() {
           template_type: templateType,
         }),
       });
-
-      const data = await res.json();
 
       if (!data.success) {
         setError(data.error || "Failed to create client.");
@@ -106,13 +102,10 @@ function AdminDashboard() {
   const handleTemplateChange = async (id, value) => {
     setSwitchingId(id);
     try {
-      const res = await fetch(`${API_BASE_URL}/clients/${id}/template`, {
+      const data = await apiFetch(`/clients/${id}/template`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ template_type: value }),
       });
-
-      const data = await res.json();
 
       if (!data.success) {
         alert(data.error || "Failed to change template.");
@@ -133,7 +126,14 @@ function AdminDashboard() {
   return (
     <div className="admin-dashboard">
       <header className="admin-header">
-        <h1>CBE QuickSite Admin</h1>
+        <div className="admin-header-top">
+          <h1>CBE QuickSite Admin</h1>
+          {onLogout && (
+            <button type="button" className="logout-btn" onClick={onLogout}>
+              Log out
+            </button>
+          )}
+        </div>
         <p>Manage all clients</p>
       </header>
 

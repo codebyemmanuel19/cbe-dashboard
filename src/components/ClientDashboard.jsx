@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { uploadImage } from "../utils/uploadImage";
+import { apiFetch } from "../utils/api";
 import "./ClientDashboard.css";
 
-const API_BASE_URL = "https://cbe-quicksite-backend.onrender.com";
 const DESCRIPTION_MAX_LENGTH = 160;
 const MAX_LISTING_IMAGES = 4;
 
@@ -18,7 +18,7 @@ const EMPTY_PROPERTY = {
   status: "",
 };
 
-function ClientDashboard({ user }) {
+function ClientDashboard({ user, onLogout }) {
   // Property clients get different listing fields and different wording
   const isRealEstate = user.template_type === "realestate";
   const itemWord = isRealEstate ? "Property" : "Listing";
@@ -98,9 +98,9 @@ function ClientDashboard({ user }) {
     setSaving(true);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/clients/${user.id}`, {
+      // apiFetch attaches the login token — the backend checks this id is yours
+      const data = await apiFetch(`/clients/${user.id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           business_name: businessName,
           home_text: homeText,
@@ -116,8 +116,6 @@ function ClientDashboard({ user }) {
           social_tiktok: tiktok,
         }),
       });
-
-      const data = await res.json();
 
       if (!data.success) {
         setError(data.error || "Failed to save changes.");
@@ -138,8 +136,7 @@ function ClientDashboard({ user }) {
   const fetchListings = async () => {
     setLoadingListings(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/listings/client/${user.id}`);
-      const data = await res.json();
+      const data = await apiFetch(`/listings/client/${user.id}`);
       if (data.success) {
         setListings(data.listings || []);
       }
@@ -221,10 +218,7 @@ function ClientDashboard({ user }) {
     if (!window.confirm(`Delete this ${itemWord.toLowerCase()}? This cannot be undone.`)) return;
 
     try {
-      const res = await fetch(`${API_BASE_URL}/listings/${id}`, {
-        method: "DELETE",
-      });
-      const data = await res.json();
+      const data = await apiFetch(`/listings/${id}`, { method: "DELETE" });
 
       if (!data.success) {
         alert(data.error || "Failed to delete.");
@@ -252,11 +246,10 @@ function ClientDashboard({ user }) {
 
     try {
       const isEditing = editingId !== null;
-      const url = isEditing
-        ? `${API_BASE_URL}/listings/${editingId}`
-        : `${API_BASE_URL}/listings`;
+      const path = isEditing ? `/listings/${editingId}` : "/listings";
       const method = isEditing ? "PUT" : "POST";
 
+      // client_id is no longer sent — the backend takes it from the token
       const body = {
         title: listingTitle,
         description: listingDescription,
@@ -266,17 +259,10 @@ function ClientDashboard({ user }) {
         details: isRealEstate ? property : null,
       };
 
-      if (!isEditing) {
-        body.client_id = user.id;
-      }
-
-      const res = await fetch(url, {
+      const data = await apiFetch(path, {
         method,
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-
-      const data = await res.json();
 
       if (!data.success) {
         setListingError(data.error || "Failed to save.");
@@ -297,7 +283,14 @@ function ClientDashboard({ user }) {
   return (
     <div className="dashboard">
       <header className="dashboard-header">
-        <h1>Welcome, {businessName}</h1>
+        <div className="dashboard-header-top">
+          <h1>Welcome, {businessName}</h1>
+          {onLogout && (
+            <button type="button" className="logout-btn" onClick={onLogout}>
+              Log out
+            </button>
+          )}
+        </div>
         <p>Manage your website content below</p>
       </header>
 

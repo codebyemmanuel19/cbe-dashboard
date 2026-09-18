@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { API_BASE_URL, saveSession } from "../utils/api";
 import "./Login.css";
 
 function Login({ onLoginSuccess }) {
@@ -19,14 +20,11 @@ function Login({ onLoginSuccess }) {
     setLoading(true);
 
     try {
-      const res = await fetch(
-        "https://cbe-quicksite-backend.onrender.com/clients/login",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password }),
-        }
-      );
+      const res = await fetch(`${API_BASE_URL}/clients/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
       const data = await res.json();
 
@@ -36,7 +34,8 @@ function Login({ onLoginSuccess }) {
         return;
       }
 
-      // Real client record from the database
+      // Keep the token — every save from now on sends it
+      saveSession(data.token, data.client);
       onLoginSuccess(data.client);
     } catch (err) {
       console.error("Login error:", err);
